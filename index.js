@@ -42,6 +42,7 @@ async function run() {
       .collection("appointmentOptions");
     const bookingsCollection = client.db("wellBeCare").collection("bookings");
     const usersCollection = client.db("wellBeCare").collection("users");
+    const doctorsCollection = client.db("wellBeCare").collection("dpctors");
 
     app.get("/appointmentOptions", async (req, res) => {
       const date = req.query.date;
@@ -102,6 +103,15 @@ async function run() {
       res.send({ isAdmin: user?.role === "admin" });
     });
 
+    app.get("/appointmentSpecialty", async (req, res) => {
+      const query = {};
+      const result = await appointmentOptionCollection
+        .find(query)
+        .project({ name: 1 })
+        .toArray();
+      res.send(result);
+    });
+
     app.post("/bookings", async (req, res) => {
       const booking = req.body;
       const query = {
@@ -122,6 +132,12 @@ async function run() {
     app.post("/users", async (req, res) => {
       const user = req.body;
       const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    app.post("/doctors", async (req, res) => {
+      const doctor = req.body;
+      const result = await doctorsCollection.insertOne(doctor);
       res.send(result);
     });
 
