@@ -12,7 +12,6 @@ app.use(cors());
 app.use(express.json());
 
 function verifyJWT(req, res, next) {
-  // console.log('token', req.headers.authorization);
   const authHeader = req.headers.authorization;
   if (!authHeader) {
     return res.status(401).send("Unauthorized");
@@ -44,6 +43,16 @@ async function run() {
     const usersCollection = client.db("wellBeCare").collection("users");
     const doctorsCollection = client.db("wellBeCare").collection("dpctors");
 
+    const verifyAdmin = async (req, res, next) => {
+      const deCodedEmail = req.decoded?.email;
+      const query = { email: deCodedEmail };
+      const user = await usersCollection.findOne(query);
+      if (user?.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
     app.get("/appointmentOptions", async (req, res) => {
       const date = req.query.date;
       const query = {};
@@ -66,7 +75,7 @@ async function run() {
       });
       res.send(options);
     });
-    app.get("/bookings", verifyJWT, async (req, res) => {
+    app.get("/bookings", verifyJWT, verifyAdmin, async (req, res) => {
       const email = req.query.email;
       const decodedEmail = req.decoded.email;
       if (email !== decodedEmail) {
@@ -111,7 +120,7 @@ async function run() {
         .toArray();
       res.send(result);
     });
-    app.get("/doctors", async (req, res) => {
+    app.get("/doctors", verifyJWT, verifyAdmin, async (req, res) => {
       const query = {};
       const doctors = await doctorsCollection.find(query).toArray();
       res.send(doctors);
@@ -140,20 +149,13 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/doctors", async (req, res) => {
+    app.post("/doctors", verifyJWT, verifyAdmin, async (req, res) => {
       const doctor = req.body;
       const result = await doctorsCollection.insertOne(doctor);
       res.send(result);
     });
 
-    app.put("/users/admin/:id", verifyJWT, async (req, res) => {
-      const deCodedEmail = req.decoded.email;
-      const query = { email: deCodedEmail };
-      const user = await usersCollection.findOne(query);
-      if (user.role !== "admin") {
-        return res.status(403).send({ message: "forbidden access" });
-      }
-
+    app.put("/users/admin/:id", verifyJWT, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const filter = { _id: ObjectId(id) };
       const options = { upsert: true };
@@ -167,6 +169,13 @@ async function run() {
         updatedDoc,
         options
       );
+      res.send(result);
+    });
+
+    app.delete("/doctors/:id", verifyJWT, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await doctorsCollection.deleteOne(filter);
       res.send(result);
     });
   } finally {
