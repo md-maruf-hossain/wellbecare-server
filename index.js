@@ -111,6 +111,11 @@ async function run() {
         .toArray();
       res.send(result);
     });
+    app.get("/doctors", async (req, res) => {
+      const query = {};
+      const doctors = await doctorsCollection.find(query).toArray();
+      res.send(doctors);
+    });
 
     app.post("/bookings", async (req, res) => {
       const booking = req.body;
