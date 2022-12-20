@@ -75,7 +75,7 @@ async function run() {
       });
       res.send(options);
     });
-    app.get("/bookings", verifyJWT, verifyAdmin, async (req, res) => {
+    app.get("/bookings", verifyJWT, async (req, res) => {
       const email = req.query.email;
       const decodedEmail = req.decoded.email;
       if (email !== decodedEmail) {
@@ -124,6 +124,13 @@ async function run() {
       const query = {};
       const doctors = await doctorsCollection.find(query).toArray();
       res.send(doctors);
+    });
+
+    app.get("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const booking = await bookingsCollection.findOne(query);
+      res.send(booking);
     });
 
     app.post("/bookings", async (req, res) => {
