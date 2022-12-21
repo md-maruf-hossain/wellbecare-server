@@ -3,6 +3,8 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
+const stripe = require("stripe")(process.env.STRIPE_SECRET);
+
 const port = process.env.PORT || 5000;
 
 const app = express();
@@ -42,6 +44,21 @@ async function run() {
     const bookingsCollection = client.db("wellBeCare").collection("bookings");
     const usersCollection = client.db("wellBeCare").collection("users");
     const doctorsCollection = client.db("wellBeCare").collection("dpctors");
+
+    app.post("/create-payment-intent", async (req, res) => {
+      const booking = req.body;
+      const price = booking.price;
+      const amount = price * 100;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        currency: "usd",
+        amount: amount,
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
 
     const verifyAdmin = async (req, res, next) => {
       const deCodedEmail = req.decoded?.email;
