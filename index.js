@@ -44,6 +44,7 @@ async function run() {
     const bookingsCollection = client.db("wellBeCare").collection("bookings");
     const usersCollection = client.db("wellBeCare").collection("users");
     const doctorsCollection = client.db("wellBeCare").collection("dpctors");
+    const paymentsCollection = client.db("wellBeCare").collection("payments");
 
     app.post("/create-payment-intent", async (req, res) => {
       const booking = req.body;
@@ -176,6 +177,24 @@ async function run() {
     app.post("/doctors", verifyJWT, verifyAdmin, async (req, res) => {
       const doctor = req.body;
       const result = await doctorsCollection.insertOne(doctor);
+      res.send(result);
+    });
+
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      const result = await paymentsCollection.insertOne(payment);
+      const id = payment.bookingId;
+      const filter = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId,
+        },
+      };
+      const updatedResult = await bookingsCollection.updateOne(
+        filter,
+        updatedDoc
+      );
       res.send(result);
     });
 
